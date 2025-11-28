@@ -7,7 +7,7 @@ class TodoItem {
   bool isDone;
   DateTime? deadline;
   String priority;
-  bool isFavorite; // Yangi maydon
+  bool isFavorite;
 
   TodoItem(this.title, this.category, this.isDone,
       {this.deadline, this.priority = "Low", this.isFavorite = false});
@@ -28,6 +28,9 @@ class _HomePageState extends State<HomePage> {
   String selectedFilter = "All";
   String searchQuery = "";
   String sortOption = "None";
+
+  TodoItem? _recentlyDeleted;
+  int? _recentlyDeletedIndex;
 
   Color categoryColor(String c) {
     if (c == "Work") return Colors.blue;
@@ -140,17 +143,26 @@ class _HomePageState extends State<HomePage> {
             filterChip("All"),
             filterChip("Work"),
             filterChip("Study"),
-            filterChip("Sport"),
+            filterChip("Home"),
           ],
         ),
       ),
 
-      body: ListView.builder(
+      // Drag & Drop / ReorderableListView
+      body: ReorderableListView.builder(
         itemCount: filteredTasks.length,
+        onReorder: (oldIndex, newIndex) {
+          setState(() {
+            if (newIndex > oldIndex) newIndex--;
+            final item = tasks.removeAt(tasks.indexOf(filteredTasks[oldIndex]));
+            tasks.insert(tasks.indexOf(filteredTasks[newIndex]), item);
+          });
+        },
         itemBuilder: (context, index) {
           final t = filteredTasks[index];
 
           return Card(
+            key: ValueKey(t),
             margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             child: ListTile(
               leading: Column(
@@ -212,6 +224,34 @@ class _HomePageState extends State<HomePage> {
                       setState(() {
                         t.isDone = v!;
                       });
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () {
+                      _recentlyDeleted = t;
+                      _recentlyDeletedIndex = tasks.indexOf(t);
+                      setState(() {
+                        tasks.remove(t);
+                      });
+                      ScaffoldMessenger.of(context).clearSnackBars();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text("Task deleted"),
+                          action: SnackBarAction(
+                            label: "Undo",
+                            onPressed: () {
+                              if (_recentlyDeleted != null &&
+                                  _recentlyDeletedIndex != null) {
+                                setState(() {
+                                  tasks.insert(
+                                      _recentlyDeletedIndex!, _recentlyDeleted!);
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      );
                     },
                   ),
                 ],
