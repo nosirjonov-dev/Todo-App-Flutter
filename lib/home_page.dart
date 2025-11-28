@@ -7,12 +7,18 @@ class TodoItem {
   bool isDone;
   DateTime? deadline;
   String priority;
+  bool isFavorite; // Yangi maydon
 
   TodoItem(this.title, this.category, this.isDone,
-      {this.deadline, this.priority = "Low"});
+      {this.deadline, this.priority = "Low", this.isFavorite = false});
 }
 
 class HomePage extends StatefulWidget {
+  final bool isDarkMode;
+  final VoidCallback onToggleTheme;
+
+  const HomePage({super.key, required this.isDarkMode, required this.onToggleTheme});
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -21,7 +27,7 @@ class _HomePageState extends State<HomePage> {
   List<TodoItem> tasks = [];
   String selectedFilter = "All";
   String searchQuery = "";
-  String sortOption = "None"; // None / Priority / Deadline
+  String sortOption = "None";
 
   Color categoryColor(String c) {
     if (c == "Work") return Colors.blue;
@@ -48,7 +54,6 @@ class _HomePageState extends State<HomePage> {
           .toList();
     }
 
-    // Sorting
     if (sortOption == "Priority") {
       filtered.sort((a, b) {
         const order = {"High": 3, "Medium": 2, "Low": 1};
@@ -74,6 +79,12 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text("Todo App"),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: widget.onToggleTheme,
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
@@ -120,7 +131,6 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
 
-      // Filter Chips
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         color: Colors.grey.shade200,
@@ -182,13 +192,29 @@ class _HomePageState extends State<HomePage> {
                   Text("Priority: ${t.priority}"),
                 ],
               ),
-              trailing: Checkbox(
-                value: t.isDone,
-                onChanged: (v) {
-                  setState(() {
-                    t.isDone = v!;
-                  });
-                },
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      t.isFavorite ? Icons.star : Icons.star_border,
+                      color: t.isFavorite ? Colors.yellow : null,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        t.isFavorite = !t.isFavorite;
+                      });
+                    },
+                  ),
+                  Checkbox(
+                    value: t.isDone,
+                    onChanged: (v) {
+                      setState(() {
+                        t.isDone = v!;
+                      });
+                    },
+                  ),
+                ],
               ),
             ),
           );

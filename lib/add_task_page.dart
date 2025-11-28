@@ -11,6 +11,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
   String selectedCategory = "Work";
   String selectedPriority = "Low";
   DateTime? selectedDeadline;
+  bool isFavorite = false;
 
   Future<void> pickDeadline() async {
     final date = await showDatePicker(
@@ -44,9 +45,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                 hintText: "Enter task...",
               ),
             ),
-
             const SizedBox(height: 20),
-
             const Text("Select category"),
             DropdownButton<String>(
               value: selectedCategory,
@@ -62,9 +61,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                 });
               },
             ),
-
             const SizedBox(height: 20),
-
             const Text("Select priority"),
             DropdownButton<String>(
               value: selectedPriority,
@@ -80,9 +77,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                 });
               },
             ),
-
             const SizedBox(height: 20),
-
             Row(
               children: [
                 const Text("Deadline: "),
@@ -96,9 +91,21 @@ class _AddTaskPageState extends State<AddTaskPage> {
                 ),
               ],
             ),
-
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Text("Mark as Favorite"),
+                Checkbox(
+                  value: isFavorite,
+                  onChanged: (v) {
+                    setState(() {
+                      isFavorite = v!;
+                    });
+                  },
+                ),
+              ],
+            ),
             const Spacer(),
-
             Center(
               child: ElevatedButton(
                 onPressed: () {
@@ -112,6 +119,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                       false,
                       deadline: selectedDeadline,
                       priority: selectedPriority,
+                      isFavorite: isFavorite,
                     ),
                   );
                 },

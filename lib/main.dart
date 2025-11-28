@@ -5,14 +5,31 @@ void main() {
   runApp(const MyTodoApp());
 }
 
-class MyTodoApp extends StatelessWidget {
+class MyTodoApp extends StatefulWidget {
   const MyTodoApp({super.key});
+
+  @override
+  State<MyTodoApp> createState() => _MyTodoAppState();
+}
+
+class _MyTodoAppState extends State<MyTodoApp> {
+  bool isDarkMode = false;
+
+  void toggleTheme() {
+    setState(() {
+      isDarkMode = !isDarkMode;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: HomePage(),
+      theme: isDarkMode ? ThemeData.dark() : ThemeData.light(),
+      home: HomePage(
+        isDarkMode: isDarkMode,
+        onToggleTheme: toggleTheme,
+      ),
     );
   }
 }
