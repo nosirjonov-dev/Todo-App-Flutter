@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'add_task_page.dart';
+import 'stats_page.dart';
 
 class TodoItem {
   String title;
@@ -86,6 +87,15 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
             onPressed: widget.onToggleTheme,
+          ),
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => StatsPage(tasks: tasks)),
+              );
+            },
           ),
         ],
         bottom: PreferredSize(
