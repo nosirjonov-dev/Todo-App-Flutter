@@ -49,7 +49,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
             const Text("Select category"),
             DropdownButton<String>(
               value: selectedCategory,
-              items: ["Work", "Study", "Home"]
+              items: ["Work", "Study", "Sport"]
                   .map((e) => DropdownMenuItem(
                 value: e,
                 child: Text(e),
@@ -120,6 +120,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                       deadline: selectedDeadline,
                       priority: selectedPriority,
                       isFavorite: isFavorite,
+                      date: selectedDeadline ?? DateTime.now(),
                     ),
                   );
                 },

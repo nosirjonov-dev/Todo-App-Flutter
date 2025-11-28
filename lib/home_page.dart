@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:todo_app_flutter/stats_page.dart';
 import 'add_task_page.dart';
-import 'stats_page.dart';
 
 class TodoItem {
   String title;
@@ -9,16 +9,21 @@ class TodoItem {
   DateTime? deadline;
   String priority;
   bool isFavorite;
+  DateTime date; // yangi qo'shildi
 
   TodoItem(this.title, this.category, this.isDone,
-      {this.deadline, this.priority = "Low", this.isFavorite = false});
+      {this.deadline,
+        this.priority = "Low",
+        this.isFavorite = false,
+        required this.date});
 }
 
 class HomePage extends StatefulWidget {
   final bool isDarkMode;
   final VoidCallback onToggleTheme;
 
-  const HomePage({super.key, required this.isDarkMode, required this.onToggleTheme});
+  const HomePage(
+      {super.key, required this.isDarkMode, required this.onToggleTheme});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -26,7 +31,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<TodoItem> tasks = [];
-  String selectedFilter = "All";
+  String selectedFilter = "All"; // Category filter
+  String dateFilter = "Today"; // Daily filter
   String searchQuery = "";
   String sortOption = "None";
 
@@ -36,7 +42,7 @@ class _HomePageState extends State<HomePage> {
   Color categoryColor(String c) {
     if (c == "Work") return Colors.blue;
     if (c == "Study") return Colors.green;
-    if (c == "Home") return Colors.orange;
+    if (c == "Sport") return Colors.orange;
     return Colors.grey;
   }
 
@@ -47,10 +53,30 @@ class _HomePageState extends State<HomePage> {
   }
 
   List<TodoItem> getFilteredTasks() {
-    List<TodoItem> filtered = selectedFilter == "All"
-        ? tasks
-        : tasks.where((t) => t.category == selectedFilter).toList();
+    List<TodoItem> filtered = tasks;
 
+    // Category filter
+    if (selectedFilter != "All") {
+      filtered = filtered.where((t) => t.category == selectedFilter).toList();
+    }
+
+    // Daily filter
+    DateTime now = DateTime.now();
+    filtered = filtered.where((t) {
+      if (dateFilter == "Today") {
+        return t.date.year == now.year &&
+            t.date.month == now.month &&
+            t.date.day == now.day;
+      } else if (dateFilter == "Tomorrow") {
+        DateTime tomorrow = now.add(const Duration(days: 1));
+        return t.date.year == tomorrow.year &&
+            t.date.month == tomorrow.month &&
+            t.date.day == tomorrow.day;
+      }
+      return true; // All
+    }).toList();
+
+    // Search filter
     if (searchQuery.isNotEmpty) {
       filtered = filtered
           .where(
@@ -58,6 +84,7 @@ class _HomePageState extends State<HomePage> {
           .toList();
     }
 
+    // Sorting
     if (sortOption == "Priority") {
       filtered.sort((a, b) {
         const order = {"High": 3, "Medium": 2, "Low": 1};
@@ -99,47 +126,62 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: "Search...",
-                      fillColor: Colors.white,
-                      filled: true,
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(
-                          borderRadius:
-                          BorderRadius.all(Radius.circular(8))),
+          preferredSize: const Size.fromHeight(100),
+          child: Column(
+            children: [
+              Padding(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          hintText: "Search...",
+                          fillColor: Colors.white,
+                          filled: true,
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(8))),
+                        ),
+                        onChanged: (v) {
+                          setState(() {
+                            searchQuery = v;
+                          });
+                        },
+                      ),
                     ),
-                    onChanged: (v) {
-                      setState(() {
-                        searchQuery = v;
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.sort),
-                  onSelected: (v) {
-                    setState(() {
-                      sortOption = v;
-                    });
-                  },
-                  itemBuilder: (_) => [
-                    const PopupMenuItem(value: "None", child: Text("None")),
-                    const PopupMenuItem(
-                        value: "Priority", child: Text("Priority")),
-                    const PopupMenuItem(
-                        value: "Deadline", child: Text("Deadline")),
+                    const SizedBox(width: 8),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.sort),
+                      onSelected: (v) {
+                        setState(() {
+                          sortOption = v;
+                        });
+                      },
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(value: "None", child: Text("None")),
+                        const PopupMenuItem(
+                            value: "Priority", child: Text("Priority")),
+                        const PopupMenuItem(
+                            value: "Deadline", child: Text("Deadline")),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              // Daily filter buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  dailyFilterChip("Today"),
+                  dailyFilterChip("Tomorrow"),
+                  dailyFilterChip("All"),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
         ),
       ),
@@ -153,12 +195,11 @@ class _HomePageState extends State<HomePage> {
             filterChip("All"),
             filterChip("Work"),
             filterChip("Study"),
-            filterChip("Home"),
+            filterChip("Sport"),
           ],
         ),
       ),
 
-      // Drag & Drop / ReorderableListView
       body: ReorderableListView.builder(
         itemCount: filteredTasks.length,
         onReorder: (oldIndex, newIndex) {
@@ -212,6 +253,8 @@ class _HomePageState extends State<HomePage> {
                     Text(
                         "Deadline: ${t.deadline!.day}/${t.deadline!.month}/${t.deadline!.year}"),
                   Text("Priority: ${t.priority}"),
+                  Text(
+                      "Date: ${t.date.day}/${t.date.month}/${t.date.year}"), // ko'rsatiladi
                 ],
               ),
               trailing: Row(
@@ -298,6 +341,19 @@ class _HomePageState extends State<HomePage> {
       onSelected: (v) {
         setState(() {
           selectedFilter = label;
+        });
+      },
+    );
+  }
+
+  Widget dailyFilterChip(String label) {
+    final bool selected = dateFilter == label;
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (v) {
+        setState(() {
+          dateFilter = label;
         });
       },
     );

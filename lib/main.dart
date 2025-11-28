@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_page.dart';
+import 'add_task_page.dart';
 
 void main() {
   runApp(const MyTodoApp());
@@ -26,10 +27,7 @@ class _MyTodoAppState extends State<MyTodoApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: isDarkMode ? ThemeData.dark() : ThemeData.light(),
-      home: HomePage(
-        isDarkMode: isDarkMode,
-        onToggleTheme: toggleTheme,
-      ),
+      home: HomePage(isDarkMode: isDarkMode, onToggleTheme: toggleTheme),
     );
   }
 }
