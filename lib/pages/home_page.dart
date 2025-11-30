@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:todo_app_flutter/stats_page.dart';
+import 'package:todo_app_flutter/pages/stats_page.dart';
 import 'add_task_page.dart';
 
 class TodoItem {
