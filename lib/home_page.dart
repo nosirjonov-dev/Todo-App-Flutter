@@ -126,7 +126,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(100),
+          preferredSize: const Size.fromHeight(120),
           child: Column(
             children: [
               Padding(
