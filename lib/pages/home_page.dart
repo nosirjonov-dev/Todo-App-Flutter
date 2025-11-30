@@ -1,29 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:todo_app_flutter/pages/stats_page.dart';
 import 'add_task_page.dart';
-
-class TodoItem {
-  String title;
-  String category;
-  bool isDone;
-  DateTime? deadline;
-  String priority;
-  bool isFavorite;
-  DateTime date; // yangi qo'shildi
-
-  TodoItem(this.title, this.category, this.isDone,
-      {this.deadline,
-        this.priority = "Low",
-        this.isFavorite = false,
-        required this.date});
-}
+import 'stats_page.dart';
+import 'package:todo_app_flutter/models/todo_item.dart'; // TodoItem modeli shu yerda
 
 class HomePage extends StatefulWidget {
-  final bool isDarkMode;
-  final VoidCallback onToggleTheme;
-
-  const HomePage(
-      {super.key, required this.isDarkMode, required this.onToggleTheme});
+  const HomePage({super.key, required bool isDarkMode, required void Function() onToggleTheme});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -31,283 +12,126 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<TodoItem> tasks = [];
-  String selectedFilter = "All"; // Category filter
-  String dateFilter = "Today"; // Daily filter
-  String searchQuery = "";
-  String sortOption = "None";
 
-  TodoItem? _recentlyDeleted;
-  int? _recentlyDeletedIndex;
-
-  Color categoryColor(String c) {
-    if (c == "Work") return Colors.blue;
-    if (c == "Study") return Colors.green;
-    if (c == "Sport") return Colors.orange;
-    return Colors.grey;
+  void addTask(TodoItem item) {
+    setState(() {
+      tasks.add(item);
+    });
   }
 
-  Color priorityColor(String p) {
-    if (p == "High") return Colors.red;
-    if (p == "Medium") return Colors.amber;
-    return Colors.grey;
+  void toggleTask(int index) {
+    setState(() {
+      tasks[index].isDone = !tasks[index].isDone;
+    });
   }
 
-  List<TodoItem> getFilteredTasks() {
-    List<TodoItem> filtered = tasks;
-
-    // Category filter
-    if (selectedFilter != "All") {
-      filtered = filtered.where((t) => t.category == selectedFilter).toList();
-    }
-
-    // Daily filter
-    DateTime now = DateTime.now();
-    filtered = filtered.where((t) {
-      if (dateFilter == "Today") {
-        return t.date.year == now.year &&
-            t.date.month == now.month &&
-            t.date.day == now.day;
-      } else if (dateFilter == "Tomorrow") {
-        DateTime tomorrow = now.add(const Duration(days: 1));
-        return t.date.year == tomorrow.year &&
-            t.date.month == tomorrow.month &&
-            t.date.day == tomorrow.day;
-      }
-      return true; // All
-    }).toList();
-
-    // Search filter
-    if (searchQuery.isNotEmpty) {
-      filtered = filtered
-          .where(
-              (t) => t.title.toLowerCase().contains(searchQuery.toLowerCase()))
-          .toList();
-    }
-
-    // Sorting
-    if (sortOption == "Priority") {
-      filtered.sort((a, b) {
-        const order = {"High": 3, "Medium": 2, "Low": 1};
-        return (order[b.priority] ?? 0).compareTo(order[a.priority] ?? 0);
-      });
-    } else if (sortOption == "Deadline") {
-      filtered.sort((a, b) {
-        if (a.deadline == null && b.deadline == null) return 0;
-        if (a.deadline == null) return 1;
-        if (b.deadline == null) return -1;
-        return a.deadline!.compareTo(b.deadline!);
-      });
-    }
-
-    return filtered;
+  void removeTask(int index) {
+    setState(() {
+      tasks.removeAt(index);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredTasks = getFilteredTasks();
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Todo App"),
-        centerTitle: true,
+        title: const Text("My Tasks"),
         actions: [
           IconButton(
-            icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
-            onPressed: widget.onToggleTheme,
-          ),
-          IconButton(
-            icon: const Icon(Icons.bar_chart),
+            icon: const Icon(Icons.bar_chart_outlined),
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => StatsPage(tasks: tasks)),
+                MaterialPageRoute(
+                  builder: (_) => StatsPage(tasks: tasks),
+                ),
               );
             },
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(120),
-          child: Column(
-            children: [
-              Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ),
+
+      body: tasks.isEmpty
+          ? const Center(
+        child: Text(
+          "Hozircha task qo‘shilmagan",
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      )
+          : ListView.builder(
+        itemCount: tasks.length,
+        itemBuilder: (context, index) {
+          final item = tasks[index];
+
+          return Dismissible(
+            key: Key(item.title + index.toString()),
+            background: Container(
+              color: Colors.red.shade400,
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(left: 20),
+              child: const Icon(Icons.delete, color: Colors.white),
+            ),
+            direction: DismissDirection.startToEnd,
+            onDismissed: (_) => removeTask(index),
+
+            child: GestureDetector(
+              onTap: () => toggleTask(index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.symmetric(
+                    vertical: 6, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: item.isDone
+                      ? Colors.green.shade50
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: item.isDone
+                        ? Colors.green.shade300
+                        : Colors.grey.shade300,
+                  ),
+                ),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: TextField(
-                        decoration: const InputDecoration(
-                          hintText: "Search...",
-                          fillColor: Colors.white,
-                          filled: true,
-                          prefixIcon: Icon(Icons.search),
-                          border: OutlineInputBorder(
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(8))),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      height: 22,
+                      width: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: item.isDone
+                            ? Colors.green
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: item.isDone
+                              ? Colors.green
+                              : Colors.grey,
+                          width: 2,
                         ),
-                        onChanged: (v) {
-                          setState(() {
-                            searchQuery = v;
-                          });
-                        },
                       ),
+                      child: item.isDone
+                          ? const Icon(Icons.check,
+                          color: Colors.white, size: 16)
+                          : null,
                     ),
-                    const SizedBox(width: 8),
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.sort),
-                      onSelected: (v) {
-                        setState(() {
-                          sortOption = v;
-                        });
-                      },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(value: "None", child: Text("None")),
-                        const PopupMenuItem(
-                            value: "Priority", child: Text("Priority")),
-                        const PopupMenuItem(
-                            value: "Deadline", child: Text("Deadline")),
-                      ],
+                    const SizedBox(width: 14),
+
+                    Expanded(
+                      child: AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 250),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                          decoration: item.isDone
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                        ),
+                        child: Text(item.title),
+                      ),
                     ),
                   ],
                 ),
-              ),
-              // Daily filter buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  dailyFilterChip("Today"),
-                  dailyFilterChip("Tomorrow"),
-                  dailyFilterChip("All"),
-                ],
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        color: Colors.grey.shade200,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            filterChip("All"),
-            filterChip("Work"),
-            filterChip("Study"),
-            filterChip("Sport"),
-          ],
-        ),
-      ),
-
-      body: ReorderableListView.builder(
-        itemCount: filteredTasks.length,
-        onReorder: (oldIndex, newIndex) {
-          setState(() {
-            if (newIndex > oldIndex) newIndex--;
-            final item = tasks.removeAt(tasks.indexOf(filteredTasks[oldIndex]));
-            tasks.insert(tasks.indexOf(filteredTasks[newIndex]), item);
-          });
-        },
-        itemBuilder: (context, index) {
-          final t = filteredTasks[index];
-
-          return Card(
-            key: ValueKey(t),
-            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            child: ListTile(
-              leading: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: categoryColor(t.category),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: priorityColor(t.priority),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ),
-              title: Text(
-                t.title,
-                style: TextStyle(
-                  decoration: t.isDone ? TextDecoration.lineThrough : null,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(t.category),
-                  if (t.deadline != null)
-                    Text(
-                        "Deadline: ${t.deadline!.day}/${t.deadline!.month}/${t.deadline!.year}"),
-                  Text("Priority: ${t.priority}"),
-                  Text(
-                      "Date: ${t.date.day}/${t.date.month}/${t.date.year}"), // ko'rsatiladi
-                ],
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      t.isFavorite ? Icons.star : Icons.star_border,
-                      color: t.isFavorite ? Colors.yellow : null,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        t.isFavorite = !t.isFavorite;
-                      });
-                    },
-                  ),
-                  Checkbox(
-                    value: t.isDone,
-                    onChanged: (v) {
-                      setState(() {
-                        t.isDone = v!;
-                      });
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () {
-                      _recentlyDeleted = t;
-                      _recentlyDeletedIndex = tasks.indexOf(t);
-                      setState(() {
-                        tasks.remove(t);
-                      });
-                      ScaffoldMessenger.of(context).clearSnackBars();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text("Task deleted"),
-                          action: SnackBarAction(
-                            label: "Undo",
-                            onPressed: () {
-                              if (_recentlyDeleted != null &&
-                                  _recentlyDeletedIndex != null) {
-                                setState(() {
-                                  tasks.insert(
-                                      _recentlyDeletedIndex!, _recentlyDeleted!);
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
               ),
             ),
           );
@@ -315,47 +139,20 @@ class _HomePageState extends State<HomePage> {
       ),
 
       floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
         onPressed: () async {
-          final newTask = await Navigator.push(
+          final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => AddTaskPage()),
+            MaterialPageRoute(
+              builder: (_) => AddTaskPage(),
+            ),
           );
 
-          if (newTask != null) {
-            setState(() {
-              tasks.add(newTask);
-            });
+          if (result != null && result is TodoItem) {
+            addTask(result);
           }
         },
-        child: const Icon(Icons.add),
       ),
-    );
-  }
-
-  Widget filterChip(String label) {
-    final bool selected = selectedFilter == label;
-
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (v) {
-        setState(() {
-          selectedFilter = label;
-        });
-      },
-    );
-  }
-
-  Widget dailyFilterChip(String label) {
-    final bool selected = dateFilter == label;
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (v) {
-        setState(() {
-          dateFilter = label;
-        });
-      },
     );
   }
 }
