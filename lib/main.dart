@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
-import 'add_task_page.dart';
+import 'pages/home_page.dart';
+import 'pages/add_task_page.dart';
 
 void main() {
   runApp(const MyTodoApp());
