@@ -12,7 +12,7 @@ class MediaQueryOverride extends StatelessWidget {
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
 
-    // Web xatosi uchun boldText override ni bloklaymiz
+    // Web xatosi uchun boldText override ni bloklaymiz, bu  faqat mobile uchun ishlaydi
     return MediaQuery(
       data: mq.copyWith(boldText: false),
       child: child,
