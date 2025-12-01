@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'add_task_page.dart';
 import 'stats_page.dart';
-import 'package:todo_app_flutter/models/todo_item.dart'; // TodoItem modeli shu yerda
+import 'package:todo_app_flutter/models/todo_item.dart'; // TodoItem model is here
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required bool isDarkMode, required void Function() onToggleTheme});
