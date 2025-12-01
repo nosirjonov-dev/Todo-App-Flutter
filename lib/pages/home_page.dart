@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'add_task_page.dart';
 import 'stats_page.dart';
-import 'package:todo_app_flutter/models/todo_item.dart'; // TodoItem model is here
+import 'package:todo_app_flutter/models/todo_item.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required bool isDarkMode, required void Function() onToggleTheme});
+  final bool isDarkMode;
+  final VoidCallback onToggleTheme;
+
+  const HomePage({
+    super.key,
+    required this.isDarkMode,
+    required this.onToggleTheme,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -12,6 +19,21 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<TodoItem> tasks = [];
+  TodoItem? _recentlyDeleted;
+  int? _recentlyDeletedIndex;
+
+  Color categoryColor(String c) {
+    if (c == "Work") return Colors.blue;
+    if (c == "Study") return Colors.green;
+    if (c == "Sport") return Colors.orange;
+    return Colors.grey;
+  }
+
+  Color priorityColor(String p) {
+    if (p == "High") return Colors.red;
+    if (p == "Medium") return Colors.amber;
+    return Colors.grey;
+  }
 
   void addTask(TodoItem item) {
     setState(() {
@@ -19,16 +41,36 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void toggleTask(int index) {
+  void editTask(int index, TodoItem updated) {
     setState(() {
-      tasks[index].isDone = !tasks[index].isDone;
+      tasks[index] = updated;
     });
   }
 
   void removeTask(int index) {
+    _recentlyDeleted = tasks[index];
+    _recentlyDeletedIndex = index;
+
     setState(() {
       tasks.removeAt(index);
     });
+
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text("Task deleted"),
+        action: SnackBarAction(
+          label: "Undo",
+          onPressed: () {
+            if (_recentlyDeleted != null) {
+              setState(() {
+                tasks.insert(_recentlyDeletedIndex!, _recentlyDeleted!);
+              });
+            }
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -37,6 +79,11 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text("My Tasks"),
         actions: [
+          IconButton(
+            icon: Icon(
+                widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: widget.onToggleTheme,
+          ),
           IconButton(
             icon: const Icon(Icons.bar_chart_outlined),
             onPressed: () {
@@ -54,83 +101,122 @@ class _HomePageState extends State<HomePage> {
       body: tasks.isEmpty
           ? const Center(
         child: Text(
-          "Hozircha task qo‘shilmagan",
+          "Hozircha task yo‘q",
           style: TextStyle(fontSize: 16, color: Colors.grey),
         ),
       )
           : ListView.builder(
         itemCount: tasks.length,
         itemBuilder: (context, index) {
-          final item = tasks[index];
+          final t = tasks[index];
 
           return Dismissible(
-            key: Key(item.title + index.toString()),
+            key: Key(t.title + index.toString()),
+            direction: DismissDirection.startToEnd,
             background: Container(
-              color: Colors.red.shade400,
+              color: Colors.red,
               alignment: Alignment.centerLeft,
               padding: const EdgeInsets.only(left: 20),
               child: const Icon(Icons.delete, color: Colors.white),
             ),
-            direction: DismissDirection.startToEnd,
             onDismissed: (_) => removeTask(index),
 
             child: GestureDetector(
-              onTap: () => toggleTask(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.symmetric(
-                    vertical: 6, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: item.isDone
-                      ? Colors.green.shade50
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: item.isDone
-                        ? Colors.green.shade300
-                        : Colors.grey.shade300,
+              onTap: () async {
+                /// Edit — AddTaskPage ga qaytib borib, mavjud taskni tahrirlash
+                final updated = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        AddTaskPage(existingTask: t), // Edit mode
                   ),
-                ),
-                child: Row(
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      height: 22,
-                      width: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: item.isDone
-                            ? Colors.green
-                            : Colors.transparent,
-                        border: Border.all(
-                          color: item.isDone
-                              ? Colors.green
-                              : Colors.grey,
-                          width: 2,
-                        ),
-                      ),
-                      child: item.isDone
-                          ? const Icon(Icons.check,
-                          color: Colors.white, size: 16)
-                          : null,
-                    ),
-                    const SizedBox(width: 14),
+                );
 
-                    Expanded(
-                      child: AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 250),
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black87,
-                          decoration: item.isDone
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
+                if (updated != null && updated is TodoItem) {
+                  editTask(index, updated);
+                }
+              },
+
+              child: Card(
+                margin: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 6),
+                child: ListTile(
+                  leading: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: categoryColor(t.category),
                         ),
-                        child: Text(item.title),
                       ),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: priorityColor(t.priority),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  title: Text(
+                    t.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      decoration: t.isDone
+                          ? TextDecoration.lineThrough
+                          : null,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
+                  ),
+
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Category: ${t.category}"),
+                      if (t.deadline != null)
+                        Text(
+                            "Deadline: ${t.deadline!.day}/${t.deadline!.month}/${t.deadline!.year}"),
+                      Text("Priority: ${t.priority}"),
+                      Text(
+                          "Date: ${t.date.day}/${t.date.month}/${t.date.year}"),
+                    ],
+                  ),
+
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          t.isFavorite
+                              ? Icons.star
+                              : Icons.star_border,
+                          color: t.isFavorite
+                              ? Colors.yellow
+                              : null,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            t.isFavorite = !t.isFavorite;
+                          });
+                        },
+                      ),
+
+                      Checkbox(
+                        value: t.isDone,
+                        onChanged: (v) {
+                          setState(() {
+                            t.isDone = v!;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
