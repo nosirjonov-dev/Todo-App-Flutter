@@ -22,7 +22,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
   void initState() {
     super.initState();
 
-    // Agar edit bo‘lsa — eski ma’lumotlarni yuklaymiz
+    // Agar edit bo‘lsa — we are loading old data
     if (widget.existingTask != null) {
       final t = widget.existingTask!;
       controller.text = t.title;
