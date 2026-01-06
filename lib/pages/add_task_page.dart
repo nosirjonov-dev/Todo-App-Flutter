@@ -62,7 +62,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
             TextField(
               controller: controller,
               decoration: const InputDecoration(
-                hintText: "Enter task...",
+                hintText: "Enter your task...",
               ),
             ),
 
